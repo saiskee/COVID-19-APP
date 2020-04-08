@@ -1,4 +1,4 @@
-Google Maps Android API Sample: Current Place Details
+COVID-19 Social Distancing Application Code Base Guide
 =====================================================
 
 This sample goes hand in hand with a tutorial for the Google Maps Android API:
@@ -11,21 +11,28 @@ Prerequisites
 - Latest Android Build Tools
 - Android Support Repository
 
-Getting started
----------------
+## Overview
 
-This sample uses the Gradle build system.
+The code base contains a basic Google Map View, localization function, and a bluetooth devices scanning function. You can get your current location and show it on the map, as well as start a scanning process of bluetooth devices nearby and return the devices number.
 
-1. Download the samples by cloning this repository or downloading an archived
-  snapshot. (See the options at the top of the page.)
-1. In Android Studio, create a new project and choose the "Import non-Android Studio project" or
-  "Import Project" option.
-1. Select the `CurrentPlaceDetailsOnMap` directory that you downloaded with this repository.
-1. If prompted for a gradle configuration, accept the default settings.
-  Alternatively use the "gradlew build" command to build the project directly.
-1. Add your API key to your app's `gradle.properties` file.
-  (For information on getting an API key, see the
-  [documentation](https://developers.google.com/maps/documentation/android-api/signup).)
+When you click "Get Place" option on the menu bar, the longitude, latitude, place name as well as the address will be automatically saved in the variables: markerLatLng, markerSnippet, markerPlaceName. You can find them at the top of the `MapsActivityCurrent.java` file.
+
+When you click on the "Devices Nearby" option, you will see another view and you can return the devices number to  `MapsActivityCurrent.java` file, or return the MAC address of a certain device if you select one in the list.
+
+<img src="README/image-20200408182803714.png" alt="image-20200408182803714" style="zoom:33%;" />
+
+Also, you can customize the return value, like you can return a list of all these devices. Another thing you need to do is to filter the device type. There are many IoT devices other than smart phones, you need to decide which type of device to count in. You can find the full device type list in the reference link.
+
+If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
+
+1. [Android Bluetooth Overview: Official Bluetooth Guide](https://developer.android.com/guide/topics/connectivity/bluetooth)
+2. [Android-BluetoothChat: Official Sample Code Here For Bluetooth](https://github.com/googlearchive/android-BluetoothChat)
+3. [Android Build location-aware apps: Official User Location Guide](https://developer.android.com/training/location)
+4. [Android Location Samples: Official Sample Code For User Location](https://github.com/android/location-samples)
+5. [Android Google Map Guide](https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial)
+6. [Android Bluetooth Devices Type Full Table](https://developer.android.com/reference/android/bluetooth/BluetoothClass.Device)
+
+## Reference
 
 Support
 -------
@@ -44,4 +51,5 @@ License
 -------
 
 Please refer to the [LICENSE](https://github.com/googlemaps/android-samples/blob/master/LICENSE) at the root of this repo.
+
 # COVID-19-APP

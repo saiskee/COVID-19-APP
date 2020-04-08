@@ -25,14 +25,14 @@ Also, you can customize the return value, like you can return a list of all thes
 
 If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
 
+## Reference
+
 1. [Android Bluetooth Overview: Official Bluetooth Guide](https://developer.android.com/guide/topics/connectivity/bluetooth)
 2. [Android-BluetoothChat: Official Sample Code Here For Bluetooth](https://github.com/googlearchive/android-BluetoothChat)
 3. [Android Build location-aware apps: Official User Location Guide](https://developer.android.com/training/location)
 4. [Android Location Samples: Official Sample Code For User Location](https://github.com/android/location-samples)
 5. [Android Google Map Guide](https://developers.google.com/maps/documentation/android-sdk/current-place-tutorial)
 6. [Android Bluetooth Devices Type Full Table](https://developer.android.com/reference/android/bluetooth/BluetoothClass.Device)
-
-## Reference
 
 Support
 -------
@@ -51,5 +51,3 @@ License
 -------
 
 Please refer to the [LICENSE](https://github.com/googlemaps/android-samples/blob/master/LICENSE) at the root of this repo.
-
-# COVID-19-APP

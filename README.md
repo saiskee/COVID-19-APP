@@ -26,7 +26,7 @@ Also, you can customize the return value, like you can return a list of all thes
 
 ## Attention
 
-1. Remember to apply for a **Google Map API Key** and copy your key into file `gradle.properties` file in your root folder. Replace the value in the line `GOOGLE_MAPS_API_KEY=INPUT_YOUR_API_KEY` by your key string. **OR YOU CAN NOT USE THE MAP**.
+1. Remember to apply for a **Google Map API Key** [(click this link to apply)](https://developers.google.com/maps/gmp-get-started) and copy your key into file `gradle.properties` file in your root folder. Replace the value in the line `GOOGLE_MAPS_API_KEY=INPUT_YOUR_API_KEY` by your key string. **OR YOU CAN NOT USE THE MAP**.
  
 2. If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
 

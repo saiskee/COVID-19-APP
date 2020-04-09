@@ -10,6 +10,7 @@ Prerequisites
 - Android SDK v24
 - Latest Android Build Tools
 - Android Support Repository
+- Google Map API
 
 ## Overview
 
@@ -25,9 +26,11 @@ Also, you can customize the return value, like you can return a list of all thes
 
 ## Attention
 
-If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
+1. Remember to apply for a **Google Map API Key** and copy your key into file `gradle.properties` file in your root folder. Replace the value in the line `GOOGLE_MAPS_API_KEY=INPUT_YOUR_API_KEY` by your key string. **OR YOU CAN NOT USE THE MAP**.
+ 
+2. If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
 
-All important tasks left for you are wrapped with `\\\\\\\\\\\\\\\\\\\\\\\\\\\`, search them and try to understand the code, as well as implement your own ideas.
+3. All important tasks left for you are wrapped with `\\\\\\\\\\\\\\\\\\\\\\\\\\\`, search them and try to understand the code, as well as implement your own ideas.
 
 ## Reference
 

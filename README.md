@@ -32,7 +32,7 @@ Also, you can customize the return value, like you can return a list of all thes
 
 3. All important tasks left for you are wrapped with `\\\\\\\\\\\\\\\\\\\\\\\\\\\`, search them and try to understand the code, as well as implement your own ideas.
 
-4. The button and TextView is empty. They are not binded or given any function. They are left for you to implement whatever function you like.
+4. The button and TextView in the bottom is empty. They are not binded or given any function. They are left for you to implement whatever function you like.
 
 ## Reference
 

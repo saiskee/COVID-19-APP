@@ -23,7 +23,11 @@ When you click on the "Devices Nearby" option, you will see another view and you
 
 Also, you can customize the return value, like you can return a list of all these devices. Another thing you need to do is to filter the device type. There are many IoT devices other than smart phones, you need to decide which type of device to count in. You can find the full device type list in the reference link.
 
+## Attention
+
 If you want to change the main UI or any functionalities, feel free to do that as long as you can make sure the tasks required can be finished.
+
+All important tasks left for you are wrapped with `\\\\\\\\\\\\\\\\\\\\\\\\\\\`, search them and try to understand the code, as well as implement your own ideas.
 
 ## Reference
 

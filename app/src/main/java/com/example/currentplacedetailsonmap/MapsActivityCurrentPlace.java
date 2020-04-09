@@ -178,6 +178,7 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
                     // Example:
                     btDevicesCount = data.getExtras()
                             .getInt(DeviceListActivity.EXTRA_DEVICE_COUNT);
+                    Log.d(TAG, "Device number:" + btDevicesCount);
                     // You can change the address to the number of certain type of devices, or
                     // other variables you want to use. Remember to change the corresponding
                     // name at DeviceListActivity.java.

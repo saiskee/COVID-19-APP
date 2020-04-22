@@ -13,10 +13,13 @@ import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.location.Location;
+import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -25,7 +28,10 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseArray;
 
+import android.net.wifi.*;
+
 import androidx.core.app.NotificationCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -35,18 +41,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.List;
 
+import com.example.covidappactivities.location.AppUtils;
 import com.example.covidappactivities.map.MapsActivityCurrentPlace;
 import com.example.covidappactivities.R;
 
 public class MyForeGroundService extends Service {
 
     private static final String TAG_FOREGROUND_SERVICE = "FOREGROUND_SERVICE";
-
     public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
-
     public static final String ACTION_STOP_FOREGROUND_SERVICE = "ACTION_STOP_FOREGROUND_SERVICE";
 
+    // Wifi
+    private WifiManager mWifiManager;
+
+    // Bluetooth LE
     private BluetoothLeScanner mLEScanner;
     private ScanSettings settings;
     private List<ScanFilter> filters;
@@ -57,12 +67,17 @@ public class MyForeGroundService extends Service {
     // stores contacts indexed by time, for suppressing contacts after they've been detected too much
     HashMap<Long, ScanResult> contactList = new HashMap<Long, ScanResult>();
 
+    // Contacts that have already been noticed in current location
+
     // contacts that have been observed in a certain period of time
     HashMap<String, Integer> contactsThisCycle = new HashMap<>();
     HashSet<String> seenPairs = new HashSet<>();
     // signals closer than this count as a close contact
     int CONTACT_THRESH = -60;
 
+
+    // Location
+    private static final int DIST_THRESH = 100; // meters
 //    BroadcastReceiver plugged = new pluggedIn();
 
     boolean isRunning = false; // flag for whether the service is running or not
@@ -127,12 +142,43 @@ public class MyForeGroundService extends Service {
         return START_REDELIVER_INTENT;
     }
 
+    private final BroadcastReceiver mWifiScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context c, Intent intent) {
+            if (intent.getAction().equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+                List<android.net.wifi.ScanResult> mScanResults = mWifiManager.getScanResults();
+                for (android.net.wifi.ScanResult result: mScanResults){
+                    Log.d("WIFI_DEBUG", result.SSID + " " + result.BSSID);
+                }
+            }
+        }
+    };
+
+    private final BroadcastReceiver mLocationScanReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.getAction().equals(AppUtils.ACTION)){
+                Location location = intent.getParcelableExtra(AppUtils.POSITION);
+                Location mostRecentLocation = location;
+                float distance = intent.getFloatExtra(AppUtils.DISTANCE, 0);
+                Log.d("FOREGROUNDSERVICE_LOCATION", location.getLatitude() + " " + location.getLongitude() + " " + distance);
+
+                // If person has moved significantly
+                if (distance > DIST_THRESH){
+
+                }
+            }
+        }
+    };
+
     /* Used to build and start foreground service. */
     private void startForegroundService() {
-        createNotificationChannel(); //creates the required channel on newer platforms
+        { // Notification Code
+            createNotificationChannel(); //creates the required channel on newer platforms
 
         final SharedPreferences prefs = getSharedPreferences("com", MODE_PRIVATE);
         final SharedPreferences.Editor editor = prefs.edit();
+
         editor.putBoolean("serviceRunning", true);
         editor.commit();
         Log.d(TAG_FOREGROUND_SERVICE, "Start foreground service.");
@@ -159,8 +205,10 @@ public class MyForeGroundService extends Service {
         builder.setContentIntent(pendingIntent);
         // Build the notification.
         Notification notification = builder.build();
+
         // Start foreground service.
         startForeground(1, notification);
+    }
 
         //start Bluetooth
         final BluetoothManager bluetoothManager =
@@ -187,7 +235,17 @@ public class MyForeGroundService extends Service {
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
                 .setMatchMode(ScanSettings.MATCH_MODE_STICKY) //sticky match mode should help filter out "stray" contacts with unusually high signal strength
                 .build();
+        ScanFilter.Builder filterBuilder;
         filters = new ArrayList<ScanFilter>();
+
+        // Allow for all possible Manufacturers, workaround for screen off bluetooth scan
+        for (int idx = 0; idx < 1000; idx++){
+            filterBuilder = new ScanFilter.Builder();
+            filterBuilder.setManufacturerData(idx, new byte[] {});
+
+            filters.add(filterBuilder.build());
+        }
+
         scanLeDevice(true);
 
         //tell the system not to go to sleep
@@ -195,15 +253,24 @@ public class MyForeGroundService extends Service {
         PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
                 "ContactApp::BluetoothScan");
         wakeLock.acquire();
-        Log.d("KEERTHAN_DEBUG", "Wake Lock Acquired");
 
-        //compute the number of contacts every 30 seconds.
+        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+
+        mWifiManager.startScan();
+
+
+        registerReceiver(mWifiScanReceiver,
+                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        registerReceiver(mLocationScanReceiver, new IntentFilter(AppUtils.ACTION));
+
+
+        // compute the number of contacts every 30 seconds.
         // This compensates for things like differences in bluetooth advertising rate.
         final Handler handler = new Handler();
         final Runnable updateLoop = new Runnable() {
             @Override
             public void run() {
-                //count the number of space-seperated addresses in the contact list
+                //count the number of addresses in the contact list
                 int contactCount = 0;
                 for (int occurence: contactsThisCycle.values()){
                     contactCount += occurence;
@@ -212,6 +279,7 @@ public class MyForeGroundService extends Service {
 
                 contactsThisCycle.clear(); //reset the counter
                 signalsThisCycle = new HashMap<>(); //same for all signals
+
                 SimpleDateFormat todayFormat = new SimpleDateFormat("dd-MMM-yyyy");
                 SimpleDateFormat hourFormat = new SimpleDateFormat("H-dd-MMM-yyyy");
 
@@ -246,7 +314,7 @@ public class MyForeGroundService extends Service {
             }
 
         };
-// start
+        // start loop
         handler.post(updateLoop);
 
 
@@ -260,9 +328,7 @@ public class MyForeGroundService extends Service {
             Log.e("scan", "Starting scan...");
 
         } else {
-
             mLEScanner.stopScan(mScanCallback);
-
         }
     }
 
@@ -279,20 +345,23 @@ public class MyForeGroundService extends Service {
 //            Log.d("KEERTHAN_DEBUG", "FOUND SMART PHONE: " + result.getScanRecord().getDeviceName());
             String deviceAddress = result.getDevice().getAddress();
             String manufacturerDetails = manToString(result.getScanRecord().getManufacturerSpecificData());
-            if (!seenPairs.contains(deviceAddress + " " + manufacturerDetails)) {
-                seenPairs.add(deviceAddress + " " + manufacturerDetails);
-                Log.d("TEST_DEBUG", result.getDevice().getAddress() + " " + manToString(result.getScanRecord().getManufacturerSpecificData()));
-            }else {
 
-            }
+            HashSet<String> closeContactSet = new HashSet<>();
+
+//            if (!seenPairs.contains(deviceAddress + " " + manufacturerDetails)) {
+//                seenPairs.add(deviceAddress + " " + manufacturerDetails);
+//                Log.d("TEST_DEBUG", result.getDevice().getAddress() + " " + manToString(result.getScanRecord().getManufacturerSpecificData()));
+//            }else {
+//
+//            }
             scanResults.put(deviceAddress, result);
             ScanData.getInstance().setData(scanResults);
 
-            //if this device has not been seen this cycle, add it to the list regardless of signal strength
-            if (signalsThisCycle.containsKey(deviceAddress)) {
+            //if this device has not been seen this cycle, add it to the total contact list regardless of signal strength
+            if (!signalsThisCycle.containsKey(deviceAddress)) {
                 signalsThisCycle.put(deviceAddress, 1);
 //                signalsThisCycle = signalsThisCycle + result.getDevice().getAddress() + " ";
-                contactList.put(new Long(System.currentTimeMillis()), result);
+                contactList.put(Long.valueOf(System.currentTimeMillis()), result);
             }
 
             //check to see if this is a contact

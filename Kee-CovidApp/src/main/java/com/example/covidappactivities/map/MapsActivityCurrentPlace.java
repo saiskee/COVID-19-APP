@@ -21,7 +21,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.covidappactivities.R;
+import com.example.covidappactivities.bluetoothscan.MyForeGroundService;
 import com.example.covidappactivities.dashboard.DashboardActivity;
+import com.example.covidappactivities.location.LocationService;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -109,6 +111,15 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
+        Log.d("KEE_DEBUG", "Strating Foreground service");
+        // Start Foreground Service
+        Intent intent = new Intent(MapsActivityCurrentPlace.this, MyForeGroundService.class);
+        intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
+        startService(intent);
+
+        // Start Foreground Service
+        intent = new Intent(MapsActivityCurrentPlace.this, LocationService.class);
+        startService(intent);
 
         // Retrieve the content view that renders the map.
         setContentView(R.layout.activity_maps);

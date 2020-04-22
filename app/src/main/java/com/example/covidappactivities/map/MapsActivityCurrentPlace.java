@@ -1,4 +1,4 @@
-package com.example.currentplacedetailsonmap;
+package com.example.covidappactivities.map;
 
 import android.app.Activity;
 import android.content.DialogInterface;
@@ -20,6 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.example.covidappactivities.R;
+import com.example.covidappactivities.dashboard.DashboardActivity;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -157,7 +159,9 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.option_get_place) {
-            showCurrentPlace();
+            Intent dashboardIntent = new Intent(this, DashboardActivity.class);
+            startActivity(dashboardIntent);
+//            showCurrentPlace();
         } else if (item.getItemId() == R.id.nearby_devices) {
             // Launch the DeviceListActivity to see devices and do scan
             Intent serverIntent = new Intent(this, DeviceListActivity.class);

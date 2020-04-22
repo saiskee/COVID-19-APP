@@ -1,4 +1,4 @@
-package com.example.currentplacedetailsonmap;
+package com.example.covidappactivities.map;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -16,6 +16,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.example.covidappactivities.R;
 
 import java.util.Set;
 

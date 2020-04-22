@@ -16,7 +16,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:context="com.example.currentplacedetailsonmap.MapsActivityCurrentPlace" />
+        tools:context="com.example.covidappactivities.map.MapsActivityCurrentPlace" />
 
     <Button
         android:id="@+id/button"

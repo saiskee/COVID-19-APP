@@ -1,5 +1,6 @@
 package com.example.covidappactivities.dashboard.fragments;
 
+import android.bluetooth.le.ScanResult;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -9,12 +10,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
+import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.example.covidappactivities.R;
+import com.example.covidappactivities.bluetoothscan.ScanData;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -27,17 +31,11 @@ import java.util.TimeZone;
  * create an instance of this fragment.
  */
 public class HomeFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
 
     private static Handler handler;
     private static Runnable updateChartLoop;
+
+    private static int currentChartView = 2;
 
     public HomeFragment() {
         // Required empty public constructor
@@ -47,35 +45,23 @@ public class HomeFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
      * @return A new instance of fragment HomeFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static HomeFragment newInstance(String param1, String param2) {
+    public static HomeFragment newInstance() {
         HomeFragment fragment = new HomeFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
+
         return fragment;
     }
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
+
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         final WebView chartView = (WebView) this.getActivity().findViewById(R.id.chartView);
         chartView.setInitialScale(30);
-        chartView.setBackgroundColor(Color.WHITE);
+        chartView.setBackgroundColor(Color.rgb(255,255,255));
         chartView.getSettings().setLoadWithOverviewMode(true); //set scaling to automatically fit the image returned by server
         chartView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
         chartView.setScrollbarFadingEnabled(false);
@@ -84,6 +70,8 @@ public class HomeFragment extends Fragment {
         final SharedPreferences prefs = this.getActivity().getSharedPreferences("com", this.getActivity().MODE_PRIVATE);
         final SharedPreferences.Editor editor = prefs.edit();
 
+        final TextView contactsToday = this.getActivity().findViewById(R.id.scoreView);
+        final TextView status = this.getActivity().findViewById(R.id.scanResults);
         handler = new Handler();
         updateChartLoop = new Runnable() {
             @Override
@@ -92,30 +80,62 @@ public class HomeFragment extends Fragment {
                 // first update the total number of contacts today
                 SimpleDateFormat todayFormat = new SimpleDateFormat("dd-MMM-yyyy");
                 String todayKey = todayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
+                Log.d("CONTACTS_TODAY", String.valueOf(prefs.getInt(todayKey, 0)));
+                contactsToday.setText("Today's exposure score: " + prefs.getInt(todayKey, 0));
 
-//                contactsToday.setText("Today's exposure score: " + prefs.getInt(todayKey, 0));
+                chartView.loadUrl(generateChartString(prefs.getInt("chartMode", currentChartView))); //update the chart
 
-//                if (isVisible) {
-                chartView.loadUrl(generateChartString(prefs.getInt("chartMode", 2))); //update the chart
-//                }
 
-                /*
                 //show the devices contirbuting--this is not visible by default because the textView that holds it is set to GONE but can be turned pn
                 String dispResult = "";
+                Log.d("SCAN_RESULT_FRONTEND", ScanData.getInstance().getData().keySet().toString());
                 for (String i : ScanData.getInstance().getData().keySet()) {
                     ScanResult temp = ScanData.getInstance().getData().get(i);
-                    if (temp.getRssi() > LIST_THRESH) {
+                    if (temp.getRssi() > -60) {
                         dispResult = dispResult + temp.getDevice().getAddress() + " : " + temp.getDevice().getName() + " " + temp.getRssi() + "\n";
                     }
                 }
                 status.setText(dispResult);
-                */
+
                 handler.postDelayed(this, 10000);
             }
 
         };
 // start
         handler.post(updateChartLoop);
+
+        final Button viewHour = this.getActivity().findViewById(R.id.viewHour);
+        viewHour.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editor.putInt("chartMode", 1);
+                currentChartView = 1;
+                chartView.loadUrl(generateChartString(currentChartView));
+                editor.apply();
+            }
+        });
+        final Button viewDay = this.getActivity().findViewById(R.id.viewDay);
+        viewDay.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editor.putInt("chartMode", 2);
+                currentChartView = 2;
+                chartView.loadUrl(generateChartString(currentChartView));
+                editor.apply();
+            }
+        });
+
+        final Button viewWeek = this.getActivity().findViewById(R.id.viewWeek);
+        viewWeek.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                editor.putInt("chartMode", 3);
+                currentChartView = 3;
+                chartView.loadUrl(generateChartString(currentChartView));
+                editor.apply();
+            }
+        });
+
 
     }
 
@@ -207,6 +227,16 @@ public class HomeFragment extends Fragment {
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(updateChartLoop);
+    }
 
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        handler.post(updateChartLoop);
+    }
+
+    private int getCurrentChartView(){
+        return currentChartView;
     }
 }

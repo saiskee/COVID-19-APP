@@ -28,10 +28,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseArray;
 
-import android.net.wifi.*;
-
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,7 +38,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
-import java.util.List;
 
 import com.example.covidappactivities.location.AppUtils;
 import com.example.covidappactivities.map.MapsActivityCurrentPlace;
@@ -65,7 +61,7 @@ public class MyForeGroundService extends Service {
     HashMap<String, ScanResult> scanResults = new HashMap<String, ScanResult>();
 
     // stores contacts indexed by time, for suppressing contacts after they've been detected too much
-    HashMap<Long, ScanResult> contactList = new HashMap<Long, ScanResult>();
+    HashMap<String, Long> recentContactList = new HashMap<String, Long>();
 
     // Contacts that have already been noticed in current location
 
@@ -91,6 +87,8 @@ public class MyForeGroundService extends Service {
     long CONTACT_LIST_TIME = 1000 * 60 * (60 * 24);
     //start disregarding signals if they appear in more than this many scans
     int CONTACT_LIST_MAX = 10;
+
+    private static Location currentLocation;
 
     //signals of any strength that have already been encountered in the current scan
     HashMap<String, Integer> signalsThisCycle = new HashMap<>();
@@ -164,8 +162,8 @@ public class MyForeGroundService extends Service {
                 Log.d("FOREGROUNDSERVICE_LOCATION", location.getLatitude() + " " + location.getLongitude() + " " + distance);
 
                 // If person has moved significantly
-                if (distance > DIST_THRESH){
-
+                if (distance > DIST_THRESH || currentLocation == null){
+                    currentLocation = mostRecentLocation;
                 }
             }
         }
@@ -221,7 +219,7 @@ public class MyForeGroundService extends Service {
         }
         // Wait Time for User to turn on bluetooth
         int waitTime = 60;
-        while (waitTime > 0 && (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled())) { //wait one minute for user to turn on buetooth, if it is not on by then abort.
+        while (waitTime > 0 && (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled())) { //wait one minute for user to turn on bluetooth, if it is not on by then abort.
             waitTime--;
             SystemClock.sleep(1000);
         }
@@ -254,13 +252,13 @@ public class MyForeGroundService extends Service {
                 "ContactApp::BluetoothScan");
         wakeLock.acquire();
 
-        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+        // Get nearby AP's Callback
+//        mWifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+//        mWifiManager.startScan();
+//        registerReceiver(mWifiScanReceiver,
+//                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
-        mWifiManager.startScan();
-
-
-        registerReceiver(mWifiScanReceiver,
-                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+        // Get Location Callback
         registerReceiver(mLocationScanReceiver, new IntentFilter(AppUtils.ACTION));
 
 
@@ -270,10 +268,23 @@ public class MyForeGroundService extends Service {
         final Runnable updateLoop = new Runnable() {
             @Override
             public void run() {
+//                android.os.Debug.waitForDebugger();
                 //count the number of addresses in the contact list
                 int contactCount = 0;
-                for (int occurence: contactsThisCycle.values()){
-                    contactCount += occurence;
+                String addresses = "";
+                Log.d("CONTACTS_TODAY_ADDRESSES", addresses);
+                for (String address: contactsThisCycle.keySet()){
+
+                    if (recentContactList.containsKey(address)) {
+                        String a = "";
+                    }
+                    else {
+                        contactCount += contactsThisCycle.get(address);
+                        addresses += " " + address + " " + contactsThisCycle.get(address);
+                    }
+                    recentContactList.put(address, Long.valueOf(System.currentTimeMillis()));
+
+
                 }
                 Log.d("KEERTHAN_DEBUG", contactsThisCycle.keySet().toString());
 
@@ -282,25 +293,44 @@ public class MyForeGroundService extends Service {
 
                 SimpleDateFormat todayFormat = new SimpleDateFormat("dd-MMM-yyyy");
                 SimpleDateFormat hourFormat = new SimpleDateFormat("H-dd-MMM-yyyy");
-
                 String todayKey = todayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
                 String hourKey = hourFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-
-
                 //formats and keys for weekly and hourly graphs
                 SimpleDateFormat weekdayFormat = new SimpleDateFormat("u-W-MMM-yyyy");
                 String weekdayKey = "week-" + weekdayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
                 SimpleDateFormat minuteFormat = new SimpleDateFormat("m-H-dd-MMM-yyyy");
                 String minuteKey = "min-" + minuteFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-                Log.i("weekformatset", weekdayKey);
 
                 final SharedPreferences.Editor editor = getSharedPreferences("com", MODE_PRIVATE).edit();
+                if (currentLocation != null){
+                    double currentLatitude = Math.round(currentLocation.getLatitude() * Math.pow(10,5)) / Math.pow(10,5);
+                    double currentLongitude = Math.round(currentLocation.getLongitude() * Math.pow(10,5))/ Math.pow(10,5);
+                    String loc = "(" + currentLocation.getLatitude() + "," + currentLocation.getLongitude() + ")";
+
+                    String todayLocationKey = "locToday-" + loc;
+                    String hourLocationKey = "locHour-"+ loc;
+                    String weekDayLocationKey = "locWeek-"+ loc;
+                    String minuteLocationKey = "locMin-"+ loc;
+
+
+
+                    //get the total number of contacts today, add one, and write it back
+                    editor.putInt(todayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayLocationKey, 0) + contactCount);
+                    //also update the contacts this hour
+                    editor.putInt(hourLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourLocationKey, 0) + contactCount);
+                    //update contacts for this minute and contacts for this day
+                    editor.putInt(weekDayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekDayLocationKey, 0) + contactCount);
+                    editor.putInt(minuteLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteLocationKey, 0) + contactCount);
+
+                }
+
+
+
+
                 //get the total number of contacts today, add one, and write it back
                 editor.putInt(todayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayKey, 0) + contactCount);
                 //also update the contacts this hour
                 editor.putInt(hourKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourKey, 0) + contactCount);
-
-
                 //update contacts for this minute and contacts for this day
                 editor.putInt(minuteKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteKey, 0) + contactCount);
                 editor.putInt(weekdayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekdayKey, 0) + contactCount);
@@ -309,7 +339,7 @@ public class MyForeGroundService extends Service {
 
                 cleanContactList(); //clean out old contacts from the contact list once they expire
 
-                handler.postDelayed(this, 30000);
+                handler.postDelayed(this, 10000);
 
             }
 
@@ -342,26 +372,16 @@ public class MyForeGroundService extends Service {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
 
-//            Log.d("KEERTHAN_DEBUG", "FOUND SMART PHONE: " + result.getScanRecord().getDeviceName());
             String deviceAddress = result.getDevice().getAddress();
             String manufacturerDetails = manToString(result.getScanRecord().getManufacturerSpecificData());
 
-            HashSet<String> closeContactSet = new HashSet<>();
 
-//            if (!seenPairs.contains(deviceAddress + " " + manufacturerDetails)) {
-//                seenPairs.add(deviceAddress + " " + manufacturerDetails);
-//                Log.d("TEST_DEBUG", result.getDevice().getAddress() + " " + manToString(result.getScanRecord().getManufacturerSpecificData()));
-//            }else {
-//
-//            }
             scanResults.put(deviceAddress, result);
             ScanData.getInstance().setData(scanResults);
 
             //if this device has not been seen this cycle, add it to the total contact list regardless of signal strength
             if (!signalsThisCycle.containsKey(deviceAddress)) {
                 signalsThisCycle.put(deviceAddress, 1);
-//                signalsThisCycle = signalsThisCycle + result.getDevice().getAddress() + " ";
-                contactList.put(Long.valueOf(System.currentTimeMillis()), result);
             }
 
             //check to see if this is a contact
@@ -370,7 +390,7 @@ public class MyForeGroundService extends Service {
                 // Check if it is ignored
                 if (!getSharedPreferences("com", MODE_PRIVATE).getString("ignoreDevices", "").contains(deviceAddress)) {
                     // Check the ignore list, and also the number of times this contact has been observed in the contact list. If it's not in the ignore list and hasn't been observed too much, add it to the contact list
-                    if (!contactsThisCycle.containsKey(deviceAddress) && countContacts(deviceAddress) < CONTACT_LIST_MAX) {
+                    if (!contactsThisCycle.containsKey(deviceAddress)) {
                         contactsThisCycle.put(deviceAddress, 1);
                     }
 
@@ -390,18 +410,21 @@ public class MyForeGroundService extends Service {
     }
 
     private void cleanContactList() { //remove any entries in contact list that are too old as defined by the CONTACT_LIST_TIME variable
-        for (Long i : contactList.keySet()) {
+        for (Long i : recentContactList.values()) {
             if (i < System.currentTimeMillis() - CONTACT_LIST_TIME) {
-                contactList.remove(i);
+                recentContactList.remove(i);
             }
         }
     }
 
+    private boolean seenRecently(String address){
+        return recentContactList.containsKey(address);
+    }
 
     private int countContacts(String address) { //count the number of contacts from this device
         int hits = 0;
-        for (Long i : contactList.keySet()) {
-            if (contactList.get(i).getDevice().getAddress().equals(address)) {
+        for (String a: recentContactList.keySet()) {
+            if (a.equals(address)) {
                 hits++;
             }
         }

@@ -3,11 +3,14 @@ package com.example.covidappactivities.map;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 
+import android.os.Handler;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,8 +47,10 @@ import com.google.android.libraries.places.api.net.FindCurrentPlaceRequest;
 import com.google.android.libraries.places.api.net.FindCurrentPlaceResponse;
 import com.google.android.libraries.places.api.net.PlacesClient;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An activity that displays a map showing the place at the device's current location.
@@ -98,6 +103,10 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
     private String markerSnippet;
     private String markerPlaceName;
 
+    private List<Marker> markers;
+    private static Runnable updateMapRunnable;
+    private static Handler handler;
+
     // New Bluetooth Devices Number
     private int btDevicesCount;
     ////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +120,9 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
             mLastKnownLocation = savedInstanceState.getParcelable(KEY_LOCATION);
             mCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
         }
-        Log.d("KEE_DEBUG", "Strating Foreground service");
+
+
+        Log.d("KEE_DEBUG", "Starting Foreground service");
         // Start Foreground Service
         Intent intent = new Intent(MapsActivityCurrentPlace.this, MyForeGroundService.class);
         intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
@@ -135,6 +146,36 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        markers = new ArrayList<Marker>();
+
+        handler = new Handler();
+        updateMapRunnable = new Runnable() {
+            @Override
+            public void run() {
+                Log.d("MAP_FRONTEND","Updating Map");
+                if (!markers.isEmpty()){
+                    markers.forEach((marker) -> {
+                        marker.remove();
+                    });
+                }
+                SharedPreferences prefs = getSharedPreferences("com", MODE_PRIVATE);
+                Map<String, ?> prefsMap = prefs.getAll();
+                for (String key: prefsMap.keySet()){
+                    if (key.startsWith("locToday")){
+                        double latitude = Double.parseDouble(key.substring(key.indexOf("(")+1, key.indexOf(",")));
+                        double longitude = Double.parseDouble(key.substring(key.indexOf(",")+1, key.indexOf(")")));
+                        int numContacts = (Integer) prefsMap.get(key);
+                        LatLng pos = new LatLng(latitude, longitude);
+                        markers.add(mMap.addMarker(new MarkerOptions().position(pos).title(numContacts + " Contacts Here")));
+                    }
+                }
+                handler.postDelayed(this, 10000);
+            }
+        };
+
+        handler.post(updateMapRunnable);
+
     }
 
     /**
@@ -220,12 +261,6 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
     public void onMapReady(GoogleMap map) {
         mMap = map;
 
-
-        // TEST
-//        // Add a marker in Sydney and move the camera
-//        LatLng sydney = new LatLng(-34, 151);
-//        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
 
         // Use a custom info window adapter to handle multiple lines of text in the
         // info window contents.
@@ -315,6 +350,7 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true;
+            updateLocationUI();
         } else {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
@@ -417,7 +453,6 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
                     .snippet(getString(R.string.default_info_snippet)));
 
             // Prompt the user for permission.
-            getLocationPermission();
         }
     }
 
@@ -479,4 +514,17 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
             Log.e("Exception: %s", e.getMessage());
         }
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        handler.removeCallbacks(updateMapRunnable);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(updateMapRunnable);
+    }
 }
+

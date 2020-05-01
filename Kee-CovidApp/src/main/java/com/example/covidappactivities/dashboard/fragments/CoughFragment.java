@@ -141,7 +141,16 @@ public class CoughFragment extends Fragment {
 
     String actualModelFilename = MODEL_FILENAME.split("file:///android_asset/", -1)[1];
     try {
-      tfLite = new Interpreter(loadModelFile(this.getActivity().getAssets(), actualModelFilename));
+
+      AssetFileDescriptor fileDescriptor = this.getActivity().getAssets().openFd(actualModelFilename);
+      FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+      FileChannel fileChannel = inputStream.getChannel();
+      long startOffset = fileDescriptor.getStartOffset();
+      long declaredLength = fileDescriptor.getDeclaredLength();
+
+      tfLite = new Interpreter(fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength));
+      fileDescriptor.close();
+
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -151,8 +160,8 @@ public class CoughFragment extends Fragment {
 
     // Start the recording and recognition threads.
     requestMicrophonePermission();
-    startRecording();
-    startRecognition();
+//    startRecording();
+//    startRecognition();
 
   }
 
@@ -396,6 +405,9 @@ public class CoughFragment extends Fragment {
   }
 
   private void stopBackgroundThread() {
+    if (backgroundThread == null){
+      return;
+    }
     backgroundThread.quitSafely();
     try {
       backgroundThread.join();
@@ -435,10 +447,31 @@ public class CoughFragment extends Fragment {
     return inflater.inflate(R.layout.fragment_cough, container, false);
   }
 
+//  @Override
+//  public void onStop() {
+//    super.onStop();
+//    stopBackgroundThread();
+//  }
+//
+//  @Override
+//  public void onStart() {
+//    super.onStart();
+//    startBackgroundThread();
+//  }
+
   @Override
   public void onPause() {
+    System.out.println("PAUSING");
     super.onPause();
+    stopRecording();
     stopRecognition();
-    stopBackgroundThread();
   }
+
+//  @Override
+//  public void onResume() {
+//    System.out.println("RESUMING");
+//    super.onResume();
+//    startRecording();
+//    startRecognition();
+//  }
 }

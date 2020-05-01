@@ -296,6 +296,11 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         handler.removeCallbacks(updateMapRunnable);
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        handler.removeCallbacks(updateMapRunnable);
+    }
 
     /**
      * Use this factory method to create a new instance of

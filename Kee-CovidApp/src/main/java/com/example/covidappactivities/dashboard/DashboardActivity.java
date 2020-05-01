@@ -48,7 +48,6 @@ public class DashboardActivity extends AppCompatActivity{
 
         ////////////////////////FOREGROUND MONITORING SERVICE////////////
         {
-            Log.d("KEE_DEBUG", "Starting Foreground service");
             // Start Foreground Service
             Intent intent = new Intent(DashboardActivity.this, MyForeGroundService.class);
             intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
@@ -78,16 +77,6 @@ public class DashboardActivity extends AppCompatActivity{
     }
 
 
-
-
-
-
-//
-//    @Override
-//    protected void onDestroy() {
-//        super.onDestroy();
-//        handler.removeCallbacks(updateMapRunnable);
-//    }
 
     private BottomNavigationView.OnNavigationItemSelectedListener navigationItemSelectedListener =
             new BottomNavigationView.OnNavigationItemSelectedListener() {

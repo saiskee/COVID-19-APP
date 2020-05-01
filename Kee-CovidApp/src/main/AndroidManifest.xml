@@ -38,13 +38,11 @@
             </intent-filter>
         </activity>
 
-        <activity
+<!--        <activity
             android:name=".map.MapsActivityCurrentPlace"
             android:label="@string/title_activity_maps">
 
-        </activity>
-
-
+        </activity>-->
 
         <receiver
             android:name=".bluetoothscan.AutoStart"
@@ -54,6 +52,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
         <receiver
             android:name=".bluetoothscan.MyForeGroundService"
             android:enabled="true"
@@ -62,6 +61,12 @@
                 <action android:name="android.net.wifi.SCAN_RESULTS" />
             </intent-filter>
         </receiver>
+
+         <service
+            android:name=".bluetoothscan.MyForeGroundService"
+            android:enabled="true"
+            android:exported="false" />
+
 
         <service
             android:name=".location.LocationService"

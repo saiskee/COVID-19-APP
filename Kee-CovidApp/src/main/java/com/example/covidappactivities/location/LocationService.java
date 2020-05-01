@@ -136,7 +136,10 @@ public class LocationService extends Service implements  GoogleApiClient.Connect
 
 
     protected void stopLocationUpdates() {
-        LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+        if (googleApiClient != null){
+            LocationServices.FusedLocationApi.removeLocationUpdates(googleApiClient, this);
+
+        }
     }
 
 
@@ -147,8 +150,9 @@ public class LocationService extends Service implements  GoogleApiClient.Connect
 
         stopLocationUpdates();
 
-        googleApiClient.disconnect();
-
+        if (googleApiClient != null) {
+            googleApiClient.disconnect();
+        }
         Log.d(TAG, "onDestroy Distance " + distance);
 
 

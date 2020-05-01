@@ -63,18 +63,16 @@ public class MyForeGroundService extends Service {
     // stores contacts indexed by time, for suppressing contacts after they've been detected too much
     HashMap<String, Long> recentContactList = new HashMap<String, Long>();
 
-    // Contacts that have already been noticed in current location
 
     // contacts that have been observed in a certain period of time
     HashMap<String, Integer> contactsThisCycle = new HashMap<>();
     HashSet<String> seenPairs = new HashSet<>();
+
     // signals closer than this count as a close contact
     int CONTACT_THRESH = -60;
 
-
     // Location
     private static final int DIST_THRESH = 100; // meters
-//    BroadcastReceiver plugged = new pluggedIn();
 
     boolean isRunning = false; // flag for whether the service is running or not
 
@@ -104,22 +102,17 @@ public class MyForeGroundService extends Service {
         super.onCreate();
         Log.d(TAG_FOREGROUND_SERVICE, "foreground service onCreate().");
 
-        IntentFilter filter = new IntentFilter(Intent.ACTION_POWER_CONNECTED);
-//        this.registerReceiver(plugged, filter);
-
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         isRunning = false;
-//        this.unregisterReceiver(plugged);
-
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-
+        Log.d("START_COMMAND", "Got start command");
         if (intent != null) {
             String action = intent.getAction();
 

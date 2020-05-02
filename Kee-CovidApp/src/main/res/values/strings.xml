@@ -20,4 +20,5 @@
 
     <!-- Location -->
     <string name="unable_to_find_location">Unable to find Current Location</string>
+    <string name="title_settings">nCOVID-19 Dashboard Permissions</string>
 </resources>

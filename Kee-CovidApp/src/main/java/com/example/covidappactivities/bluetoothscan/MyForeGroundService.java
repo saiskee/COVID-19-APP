@@ -184,11 +184,11 @@ public class MyForeGroundService extends Service {
         // Make notification show big text.
         NotificationCompat.BigTextStyle bigTextStyle = new NotificationCompat.BigTextStyle();
         bigTextStyle.setBigContentTitle("Tracking exposure");
-        bigTextStyle.bigText("ContactApp is monitoring your exposure.");
+        bigTextStyle.bigText("nCovid-19 Dashboard is monitoring your exposure.");
 
         // Set big text style.
         builder.setStyle(bigTextStyle);
-        builder.setContentTitle("ContactApp is monitoring your exposure.");
+        builder.setContentTitle("nCovid-19 Dashboard is monitoring your exposure.");
         builder.setWhen(System.currentTimeMillis());
         builder.setSmallIcon(R.drawable.servicenotif);
         // Make the notification max priority.

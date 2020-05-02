@@ -82,26 +82,11 @@ public class CoughFragment extends Fragment {
   private List<String> labels = new ArrayList<String>();
   private List<String> displayedLabels = new ArrayList<>();
   private RecognizeCommands recognizeCommands = null;
-  private LinearLayout bottomSheetLayout;
-  private LinearLayout gestureLayout;
-  private BottomSheetBehavior<LinearLayout> sheetBehavior;
 
   private Interpreter tfLite;
-  private ImageView bottomSheetArrowImageView;
 
-  private TextView coughTextView,
-          nothingTextView;
-
-  private TextView sampleRateTextView, inferenceTimeTextView;
-  private ImageView plusImageView, minusImageView;
-  private SwitchCompat apiSwitchCompat;
-  private TextView threadsTextView;
-  private long lastProcessingTimeMs;
   private Handler handler = new Handler();
-//  private TextView selectedTextView = null;
   private boolean coughDetected = false;
-  private HandlerThread backgroundThread;
-  private Handler backgroundHandler;
 
   public CoughFragment() {
     // Required empty public constructor
@@ -327,13 +312,11 @@ public class CoughFragment extends Fragment {
       long currentTime = System.currentTimeMillis();
       final RecognizeCommands.RecognitionResult result =
               recognizeCommands.processLatestResults(outputScores[0], currentTime);
-      lastProcessingTimeMs = new Date().getTime() - startTime;
       this.getActivity().runOnUiThread(
               new Runnable() {
                 @Override
                 public void run() {
 
-//                  inferenceTimeTextView.setText(lastProcessingTimeMs + " ms");
 
                   // If we do have a new command, highlight the right list entry.
                   if (!result.foundCommand.startsWith("_") && result.isNewCommand) {
@@ -348,39 +331,29 @@ public class CoughFragment extends Fragment {
                       case 0:
                         coughDetected = true;
                         Log.d("COUGH_DETECTION", "COUGH DETECTED");
-//                        selectedTextView = coughTextView;
                         break;
                       default:
                         Log.d("COUGH_DETECTION", "NOTHING DETECTED");
                         coughDetected = false;
                         break;
-//                      case 1:
-//                        selectedTextView = nothingTextView;
-//                        break;
 
                     }
 
                     if (coughDetected) {
+                      final String message = getMessage(result.score * 100);
                       final String score = Math.round(result.score * 100) + "%";
+                      TextView view = (TextView) getActivity().findViewById(R.id.speechBubble);
+                      view.setText(message);
                       ImageView coughIcon = (ImageView) CoughFragment.this.getActivity().findViewById(R.id.coughBell);
-//                      coughIcon.setColorFilter(android.R.color.holo_orange_light);
-                      coughIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.holo_orange_light)));
-//                      selectedTextView.setText(selectedTextView.getText() + "\n" + score);
-//                      selectedTextView.setTextColor(
-//                              getResources().getColor(android.R.color.holo_orange_light));
+                      coughIcon.setImageResource(R.drawable.cough);
                       handler.postDelayed(
                               new Runnable() {
                                 @Override
                                 public void run() {
-                                  coughIcon.setImageTintList(ColorStateList.valueOf(getResources().getColor(android.R.color.black)));
-//                                  String origionalString =
-//                                          selectedTextView.getText().toString().replace(score, "").trim();
-//                                  selectedTextView.setText(origionalString);
-//                                  selectedTextView.setTextColor(
-//                                          getResources().getColor(android.R.color.darker_gray));
+                                  coughIcon.setImageResource(R.drawable.happy);
                                 }
                               },
-                              750);
+                              1500);
                     }
                   }
                 }
@@ -398,23 +371,18 @@ public class CoughFragment extends Fragment {
 
   private static final String HANDLE_THREAD_NAME = "CameraBackground";
 
-  private void startBackgroundThread() {
-    backgroundThread = new HandlerThread(HANDLE_THREAD_NAME);
-    backgroundThread.start();
-    backgroundHandler = new Handler(backgroundThread.getLooper());
-  }
-
-  private void stopBackgroundThread() {
-    if (backgroundThread == null){
-      return;
-    }
-    backgroundThread.quitSafely();
-    try {
-      backgroundThread.join();
-      backgroundThread = null;
-      backgroundHandler = null;
-    } catch (InterruptedException e) {
-      Log.e("amlan", "Interrupted when stopping background thread", e);
+  private String getMessage(float score){
+    double modifiedScore = Math.floor(score);
+    String[] lowConfidence = {"Was that a cough, I just heard?", "That kind of sounded like a cough", "I'm like " + String.valueOf(modifiedScore) + "% sure that was a cough"};
+    String[] highConfidence = {"That didn't sound great!", "I'm like " + String.valueOf(modifiedScore) + "% sure that was a cough", "Hope you're wearing a mask!", "Stay safe, my friend!"};
+    if (modifiedScore < 60){
+      int max = lowConfidence.length;
+      int a = (int) (Math.random() * max);
+      return lowConfidence[a];
+    }else{
+      int max = highConfidence.length;
+      int a = (int) (Math.random() * max);
+      return highConfidence[a];
     }
   }
 
@@ -447,17 +415,6 @@ public class CoughFragment extends Fragment {
     return inflater.inflate(R.layout.fragment_cough, container, false);
   }
 
-//  @Override
-//  public void onStop() {
-//    super.onStop();
-//    stopBackgroundThread();
-//  }
-//
-//  @Override
-//  public void onStart() {
-//    super.onStart();
-//    startBackgroundThread();
-//  }
 
   @Override
   public void onPause() {
@@ -467,11 +424,4 @@ public class CoughFragment extends Fragment {
     stopRecognition();
   }
 
-//  @Override
-//  public void onResume() {
-//    System.out.println("RESUMING");
-//    super.onResume();
-//    startRecording();
-//    startRecognition();
-//  }
 }

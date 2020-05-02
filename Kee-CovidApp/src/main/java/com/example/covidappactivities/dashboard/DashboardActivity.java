@@ -1,11 +1,13 @@
 package com.example.covidappactivities.dashboard;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -44,10 +46,15 @@ public class DashboardActivity extends AppCompatActivity{
 
         setContentView(R.layout.activity_dashboard);
 
+        PackageManager pm = getPackageManager();
+        boolean locationPerm = pm.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED;
+        boolean micPerm = pm.checkPermission(Manifest.permission.RECORD_AUDIO, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED;
+        if ( !locationPerm || !micPerm ){
+            Intent startSettings = new Intent(DashboardActivity.this, SettingsActivity.class);
+            DashboardActivity.this.startActivity(startSettings);
+        } else {
+            ////////////////////////FOREGROUND MONITORING SERVICE////////////
 
-
-        ////////////////////////FOREGROUND MONITORING SERVICE////////////
-        {
             // Start Foreground Service
             Intent intent = new Intent(DashboardActivity.this, MyForeGroundService.class);
             intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
@@ -67,7 +74,12 @@ public class DashboardActivity extends AppCompatActivity{
             bottomNavigation.setOnNavigationItemSelectedListener(navigationItemSelectedListener);
             openFragment(HomeFragment.newInstance());
         }
+
+
+
     }
+
+
 
     public void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();

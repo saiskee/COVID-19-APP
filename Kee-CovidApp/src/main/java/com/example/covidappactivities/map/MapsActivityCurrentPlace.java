@@ -10,7 +10,6 @@ import android.os.Bundle;
 
 import android.os.Handler;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -24,7 +23,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.example.covidappactivities.R;
-import com.example.covidappactivities.bluetoothscan.MyForeGroundService;
+import com.example.covidappactivities.bluetoothscan.ForegroundMonitoringService;
 import com.example.covidappactivities.dashboard.DashboardActivity;
 import com.example.covidappactivities.location.LocationService;
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -124,8 +123,8 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
 
         Log.d("KEE_DEBUG", "Starting Foreground service");
         // Start Foreground Service
-        Intent intent = new Intent(MapsActivityCurrentPlace.this, MyForeGroundService.class);
-        intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
+        Intent intent = new Intent(MapsActivityCurrentPlace.this, ForegroundMonitoringService.class);
+        intent.setAction(ForegroundMonitoringService.ACTION_START_FOREGROUND_SERVICE);
         startService(intent);
 
         // Start Foreground Service
@@ -210,14 +209,10 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.option_get_place) {
+        if (item.getItemId() == R.id.option_settings) {
+            System.out.println("HELLO");
             Intent dashboardIntent = new Intent(this, DashboardActivity.class);
             startActivity(dashboardIntent);
-//            showCurrentPlace();
-        } else if (item.getItemId() == R.id.nearby_devices) {
-            // Launch the DeviceListActivity to see devices and do scan
-            Intent serverIntent = new Intent(this, DeviceListActivity.class);
-            startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
         }
         return true;
     }
@@ -486,11 +481,6 @@ public class MapsActivityCurrentPlace extends AppCompatActivity
             }
         };
 
-        // Display the dialog.
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.pick_place)
-                .setItems(mLikelyPlaceNames, listener)
-                .show();
     }
 
     /**

@@ -2,36 +2,23 @@ package com.example.covidappactivities.dashboard;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
-import android.os.Handler;
-import android.provider.Settings;
-import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.example.covidappactivities.R;
-import com.example.covidappactivities.bluetoothscan.MyForeGroundService;
+import com.example.covidappactivities.bluetoothscan.ForegroundMonitoringService;
 import com.example.covidappactivities.dashboard.fragments.CoughFragment;
 import com.example.covidappactivities.dashboard.fragments.HomeFragment;
 import com.example.covidappactivities.dashboard.fragments.MapFragment;
 import com.example.covidappactivities.location.LocationService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class DashboardActivity extends AppCompatActivity{
 
@@ -50,19 +37,7 @@ public class DashboardActivity extends AppCompatActivity{
         boolean locationPerm = pm.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED;
         boolean micPerm = pm.checkPermission(Manifest.permission.RECORD_AUDIO, getApplicationContext().getPackageName()) == PackageManager.PERMISSION_GRANTED;
         if ( !locationPerm || !micPerm ){
-            Intent startSettings = new Intent(DashboardActivity.this, SettingsActivity.class);
-            DashboardActivity.this.startActivity(startSettings);
-        } else {
-            ////////////////////////FOREGROUND MONITORING SERVICE////////////
-
-            // Start Foreground Service
-            Intent intent = new Intent(DashboardActivity.this, MyForeGroundService.class);
-            intent.setAction(MyForeGroundService.ACTION_START_FOREGROUND_SERVICE);
-            startService(intent);
-
-            // Start Foreground Service
-            intent = new Intent(DashboardActivity.this, LocationService.class);
-            startService(intent);
+            launchSettingsActivity();
         }
 
 
@@ -79,14 +54,36 @@ public class DashboardActivity extends AppCompatActivity{
 
     }
 
+    // Launches the settings menu
+    public void launchSettingsActivity(){
+        Intent startSettings = new Intent(DashboardActivity.this, SettingsActivity.class);
+        DashboardActivity.this.startActivity(startSettings);
+    }
 
-
+    // Opens a "Fragment" (Contacts, Map, Sound Detection, etc.)
     public void openFragment(Fragment fragment) {
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.container, fragment);
         transaction.addToBackStack(null);
         transaction.commit();
     }
+
+    // create an action bar button
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // R.menu.mymenu is a reference to an xml file named mymenu.xml which should be inside your res/menu directory.
+        // If you don't have res/menu, just create a directory named "menu" inside res
+        getMenuInflater().inflate(R.menu.current_place_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    // handle button activities
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+            launchSettingsActivity();
+        return super.onOptionsItemSelected(item);
+    }
+
 
 
 

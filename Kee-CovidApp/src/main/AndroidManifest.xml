@@ -58,7 +58,7 @@
         </receiver>
 
         <receiver
-            android:name=".bluetoothscan.MyForeGroundService"
+            android:name=".bluetoothscan.ForegroundMonitoringService"
             android:enabled="true"
             android:exported ="true">
             <intent-filter>
@@ -67,7 +67,7 @@
         </receiver>
 
          <service
-            android:name=".bluetoothscan.MyForeGroundService"
+            android:name=".bluetoothscan.ForegroundMonitoringService"
             android:enabled="true"
             android:exported="false" />
 

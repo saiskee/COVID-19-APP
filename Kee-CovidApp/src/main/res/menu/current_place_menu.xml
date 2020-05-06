@@ -13,11 +13,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/option_get_place"
-        android:title="@string/option_get_place"
-        app:showAsAction="always"/>
-    <item
-        android:id="@+id/nearby_devices"
-        android:title="@string/nearby_devices"
+        android:id="@+id/option_settings"
+        android:title="@string/option_settings"
         app:showAsAction="always"/>
 </menu>

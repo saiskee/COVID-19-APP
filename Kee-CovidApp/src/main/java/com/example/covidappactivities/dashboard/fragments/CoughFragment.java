@@ -3,31 +3,25 @@ package com.example.covidappactivities.dashboard.fragments;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
-import android.content.res.ColorStateList;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 
 import com.example.covidappactivities.R;
 import com.example.covidappactivities.cough.RecognizeCommands;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -66,7 +60,6 @@ public class CoughFragment extends Fragment {
   private static final String LABEL_FILENAME = "file:///android_asset/labels.txt";
   private static final String MODEL_FILENAME = "file:///android_asset/cough_detection_model.tflite";
 
-  // UI elements.
   private static final int REQUEST_RECORD_AUDIO = 13;
   private static final String LOG_TAG = CoughFragment.class.getSimpleName();
 
@@ -83,6 +76,7 @@ public class CoughFragment extends Fragment {
   private List<String> displayedLabels = new ArrayList<>();
   private RecognizeCommands recognizeCommands = null;
 
+  // Tensorflow Interpreter
   private Interpreter tfLite;
 
   private Handler handler = new Handler();
@@ -95,6 +89,8 @@ public class CoughFragment extends Fragment {
   @Override
   public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
     super.onViewCreated(view, savedInstanceState);
+
+    ///////////////////////////////TENSORFLOW///////////////////////
     // Load the labels for the model, but only display those that don't start
     // with an underscore.
     String actualLabelFilename = LABEL_FILENAME.split("file:///android_asset/", -1)[1];
@@ -144,29 +140,12 @@ public class CoughFragment extends Fragment {
 //    tfLite.resizeInput(1, new int[] {1});
 
     // Start the recording and recognition threads.
-    requestMicrophonePermission();
-//    startRecording();
-//    startRecognition();
+    startRecording();
+    startRecognition();
+
 
   }
 
-  private void requestMicrophonePermission() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      requestPermissions(
-              new String[] {android.Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
-    }
-  }
-
-  @Override
-  public void onRequestPermissionsResult(
-          int requestCode, String[] permissions, int[] grantResults) {
-    if (requestCode == REQUEST_RECORD_AUDIO
-            && grantResults.length > 0
-            && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-      startRecording();
-      startRecognition();
-    }
-  }
 
   public synchronized void startRecording() {
     if (recordingThread != null) {
@@ -330,10 +309,10 @@ public class CoughFragment extends Fragment {
                     switch (labelIndex - 2) {
                       case 0:
                         coughDetected = true;
-                        Log.d("COUGH_DETECTION", "COUGH DETECTED");
+                        Log.v(LOG_TAG, "COUGH DETECTED");
                         break;
                       default:
-                        Log.d("COUGH_DETECTION", "NOTHING DETECTED");
+                        Log.v(LOG_TAG, "NOTHING DETECTED");
                         coughDetected = false;
                         break;
 
@@ -369,8 +348,11 @@ public class CoughFragment extends Fragment {
     Log.v(LOG_TAG, "End recognition");
   }
 
-  private static final String HANDLE_THREAD_NAME = "CameraBackground";
-
+  /**
+   * Returns a message to display on the cough recognition fragment
+   * @param score 0-100 probability of recognition
+   * @return message to display
+   */
   private String getMessage(float score){
     double modifiedScore = Math.floor(score);
     String[] lowConfidence = {"Was that a cough, I just heard?", "That kind of sounded like a cough", "I'm like " + String.valueOf(modifiedScore) + "% sure that was a cough"};
@@ -418,7 +400,7 @@ public class CoughFragment extends Fragment {
 
   @Override
   public void onPause() {
-    System.out.println("PAUSING");
+    Log.v(LOG_TAG, "Pausing Fragment");
     super.onPause();
     stopRecording();
     stopRecognition();

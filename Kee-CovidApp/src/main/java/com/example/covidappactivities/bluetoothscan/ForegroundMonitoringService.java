@@ -43,7 +43,7 @@ import com.example.covidappactivities.location.AppUtils;
 import com.example.covidappactivities.map.MapsActivityCurrentPlace;
 import com.example.covidappactivities.R;
 
-public class MyForeGroundService extends Service {
+public class ForegroundMonitoringService extends Service {
 
     private static final String TAG_FOREGROUND_SERVICE = "FOREGROUND_SERVICE";
     public static final String ACTION_START_FOREGROUND_SERVICE = "ACTION_START_FOREGROUND_SERVICE";
@@ -83,9 +83,8 @@ public class MyForeGroundService extends Service {
 
     //number of ms contacts on the list should be kept for
     long CONTACT_LIST_TIME = 1000 * 60 * (60 * 24);
-    //start disregarding signals if they appear in more than this many scans
-    int CONTACT_LIST_MAX = 10;
 
+    final Handler handler = new Handler();
     private static Location currentLocation;
 
     //signals of any strength that have already been encountered in the current scan
@@ -257,86 +256,7 @@ public class MyForeGroundService extends Service {
 
         // compute the number of contacts every 30 seconds.
         // This compensates for things like differences in bluetooth advertising rate.
-        final Handler handler = new Handler();
-        final Runnable updateLoop = new Runnable() {
-            @Override
-            public void run() {
-//                android.os.Debug.waitForDebugger();
-                //count the number of addresses in the contact list
-                int contactCount = 0;
-                String addresses = "";
-                Log.d("CONTACTS_TODAY_ADDRESSES", addresses);
-                for (String address: contactsThisCycle.keySet()){
 
-                    if (recentContactList.containsKey(address)) {
-                        String a = "";
-                    }
-                    else {
-                        contactCount += contactsThisCycle.get(address);
-                        addresses += " " + address + " " + contactsThisCycle.get(address);
-                    }
-                    recentContactList.put(address, Long.valueOf(System.currentTimeMillis()));
-
-
-                }
-                Log.d("KEERTHAN_DEBUG", contactsThisCycle.keySet().toString());
-
-                contactsThisCycle.clear(); //reset the counter
-                signalsThisCycle = new HashMap<>(); //same for all signals
-
-                SimpleDateFormat todayFormat = new SimpleDateFormat("dd-MMM-yyyy");
-                SimpleDateFormat hourFormat = new SimpleDateFormat("H-dd-MMM-yyyy");
-                String todayKey = todayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-                String hourKey = hourFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-                //formats and keys for weekly and hourly graphs
-                SimpleDateFormat weekdayFormat = new SimpleDateFormat("u-W-MMM-yyyy");
-                String weekdayKey = "week-" + weekdayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-                SimpleDateFormat minuteFormat = new SimpleDateFormat("m-H-dd-MMM-yyyy");
-                String minuteKey = "min-" + minuteFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
-
-                final SharedPreferences.Editor editor = getSharedPreferences("com", MODE_PRIVATE).edit();
-                if (currentLocation != null){
-                    double currentLatitude = Math.round(currentLocation.getLatitude() * Math.pow(10,5)) / Math.pow(10,5);
-                    double currentLongitude = Math.round(currentLocation.getLongitude() * Math.pow(10,5))/ Math.pow(10,5);
-                    String loc = "(" + currentLocation.getLatitude() + "," + currentLocation.getLongitude() + ")";
-
-                    String todayLocationKey = "locToday-" + loc;
-                    String hourLocationKey = "locHour-"+ loc;
-                    String weekDayLocationKey = "locWeek-"+ loc;
-                    String minuteLocationKey = "locMin-"+ loc;
-
-
-
-                    //get the total number of contacts today, add one, and write it back
-                    editor.putInt(todayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayLocationKey, 0) + contactCount);
-                    //also update the contacts this hour
-                    editor.putInt(hourLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourLocationKey, 0) + contactCount);
-                    //update contacts for this minute and contacts for this day
-                    editor.putInt(weekDayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekDayLocationKey, 0) + contactCount);
-                    editor.putInt(minuteLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteLocationKey, 0) + contactCount);
-
-                }
-
-
-
-
-                //get the total number of contacts today, add one, and write it back
-                editor.putInt(todayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayKey, 0) + contactCount);
-                //also update the contacts this hour
-                editor.putInt(hourKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourKey, 0) + contactCount);
-                //update contacts for this minute and contacts for this day
-                editor.putInt(minuteKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteKey, 0) + contactCount);
-                editor.putInt(weekdayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekdayKey, 0) + contactCount);
-                editor.apply();
-
-
-                cleanContactList(); //clean out old contacts from the contact list once they expire
-
-                handler.postDelayed(this, 10000);
-
-            }
-
-        };
         // start loop
         handler.post(updateLoop);
 
@@ -395,6 +315,8 @@ public class MyForeGroundService extends Service {
     };
 
     private void stopForegroundService() {
+        // Stop handler callback
+        handler.removeCallbacks(updateLoop);
         // Stop foreground service and remove the notification.
         stopForeground(true);
 
@@ -435,6 +357,87 @@ public class MyForeGroundService extends Service {
             notificationManager.createNotificationChannel(channel);
         }
     }
+
+    // Update Loop Runnable Instance Field
+    final Runnable updateLoop = new Runnable() {
+        @Override
+        public void run() {
+//                android.os.Debug.waitForDebugger();
+            //count the number of addresses in the contact list
+            int contactCount = 0;
+            String addresses = "";
+            Log.d("CONTACTS_TODAY_ADDRESSES", addresses);
+            for (String address: contactsThisCycle.keySet()){
+
+                if (recentContactList.containsKey(address)) {
+                    String a = "";
+                }
+                else {
+                    contactCount += contactsThisCycle.get(address);
+                    addresses += " " + address + " " + contactsThisCycle.get(address);
+                }
+                recentContactList.put(address, Long.valueOf(System.currentTimeMillis()));
+
+
+            }
+            Log.d("KEERTHAN_DEBUG", contactsThisCycle.keySet().toString());
+
+            contactsThisCycle.clear(); //reset the counter
+            signalsThisCycle = new HashMap<>(); //same for all signals
+
+            SimpleDateFormat todayFormat = new SimpleDateFormat("dd-MMM-yyyy");
+            SimpleDateFormat hourFormat = new SimpleDateFormat("H-dd-MMM-yyyy");
+            String todayKey = todayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
+            String hourKey = hourFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
+            //formats and keys for weekly and hourly graphs
+            SimpleDateFormat weekdayFormat = new SimpleDateFormat("u-W-MMM-yyyy");
+            String weekdayKey = "week-" + weekdayFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
+            SimpleDateFormat minuteFormat = new SimpleDateFormat("m-H-dd-MMM-yyyy");
+            String minuteKey = "min-" + minuteFormat.format(Calendar.getInstance(TimeZone.getDefault(), Locale.getDefault()).getTime());
+
+            final SharedPreferences.Editor editor = getSharedPreferences("com", MODE_PRIVATE).edit();
+            if (currentLocation != null){
+                double currentLatitude = Math.round(currentLocation.getLatitude() * Math.pow(10,5)) / Math.pow(10,5);
+                double currentLongitude = Math.round(currentLocation.getLongitude() * Math.pow(10,5))/ Math.pow(10,5);
+                String loc = "(" + currentLocation.getLatitude() + "," + currentLocation.getLongitude() + ")";
+
+                String todayLocationKey = "locToday-" + loc;
+                String hourLocationKey = "locHour-"+ loc;
+                String weekDayLocationKey = "locWeek-"+ loc;
+                String minuteLocationKey = "locMin-"+ loc;
+
+
+
+                //get the total number of contacts today, add one, and write it back
+                editor.putInt(todayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayLocationKey, 0) + contactCount);
+                //also update the contacts this hour
+                editor.putInt(hourLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourLocationKey, 0) + contactCount);
+                //update contacts for this minute and contacts for this day
+                editor.putInt(weekDayLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekDayLocationKey, 0) + contactCount);
+                editor.putInt(minuteLocationKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteLocationKey, 0) + contactCount);
+
+            }
+
+
+
+
+            //get the total number of contacts today, add one, and write it back
+            editor.putInt(todayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(todayKey, 0) + contactCount);
+            //also update the contacts this hour
+            editor.putInt(hourKey, getSharedPreferences("com", MODE_PRIVATE).getInt(hourKey, 0) + contactCount);
+            //update contacts for this minute and contacts for this day
+            editor.putInt(minuteKey, getSharedPreferences("com", MODE_PRIVATE).getInt(minuteKey, 0) + contactCount);
+            editor.putInt(weekdayKey, getSharedPreferences("com", MODE_PRIVATE).getInt(weekdayKey, 0) + contactCount);
+            editor.apply();
+
+
+            cleanContactList(); //clean out old contacts from the contact list once they expire
+
+            handler.postDelayed(this, 10000);
+
+        }
+
+    };
 
 
 }

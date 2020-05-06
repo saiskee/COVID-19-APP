@@ -48,6 +48,9 @@ public class LocationService extends Service implements  GoogleApiClient.Connect
 
     private float distance;
 
+    public static final String ACTION_START_LOCATION_SERVICE = "ACTION_START_LOCATION_SERVICE";
+    public static final String ACTION_STOP_LOCATION_SERVICE = "ACTION_STOP_LOCATION_SERVICE";
+
 
     @Override
     public void onCreate() {
@@ -60,13 +63,23 @@ public class LocationService extends Service implements  GoogleApiClient.Connect
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        buildGoogleApiClient();
 
-        googleApiClient.connect();
+        String action = intent.getAction();
+        switch (action){
+            case ACTION_START_LOCATION_SERVICE:
+                buildGoogleApiClient();
 
-        if (googleApiClient.isConnected()) {
-            startLocationUpdates();
+                googleApiClient.connect();
+
+                if (googleApiClient.isConnected()) {
+                    startLocationUpdates();
+                }
+                break;
+            case ACTION_STOP_LOCATION_SERVICE:
+                stopForegroundService();
+                break;
         }
+
 
         return START_STICKY;
 
@@ -231,5 +244,13 @@ public class LocationService extends Service implements  GoogleApiClient.Connect
         return distance;
     }
 
+
+    private void stopForegroundService() {
+        // Stop foreground service and remove the notification.
+        stopForeground(true);
+
+        // Stop the foreground service.
+        stopSelf();
+    }
 
 }
